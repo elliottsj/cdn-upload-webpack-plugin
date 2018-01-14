@@ -1,0 +1,20 @@
+import * as CdnUploadPlugin from '..';
+import webpack from 'webpack';
+
+module.exports = {
+    entry: './index.js',
+    output: {
+        filename: 'bundle.js'
+    },
+    plugins: [
+        new CdnUploadPlugin.Azure({
+            connection: {
+                storageAccount: process.env.STORAGE_ACCOUNT,
+                storageAccessKey: process.env.STORAGE_ACCESS_KEY
+            },
+            containerName: 'files',
+            prefix: 'my/test/folder'
+        }),
+        CdnUploadPlugin.Progress()
+    ]
+};

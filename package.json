@@ -1,0 +1,49 @@
+{
+  "name": "cdn-upload-webpack-plugin",
+  "version": "0.0.0",
+  "description": "A webpack plugin which incrementally uploads assets to a CDN upon build completion",
+  "main": "./lib/index.js",
+  "directories": {
+    "lib": "lib",
+    "example": "example"
+  },
+  "files": [
+    "lib",
+    "src"
+  ],
+  "dependencies": {
+    "@reactivex/rxjs": "^5.5.6",
+    "@types/mime": "^2.0.0",
+    "azure-storage": "^2.7.0",
+    "bind.ts": "^1.1.4",
+    "mime": "^2.2.0"
+  },
+  "devDependencies": {
+    "@types/lodash-es": "^4.17.0",
+    "@types/node": "^9.3.0",
+    "@types/webpack": "^3.8.2",
+    "lodash": "^4.17.4",
+    "ts-node": "^4.1.0",
+    "tslint": "^5.9.1",
+    "typescript": "^2.6.2",
+    "webpack": "github:elliottsj/webpack#custom-progress",
+    "webpack-dev-server": "^2.10.1"
+  },
+  "scripts": {
+    "build-ts": "tsc",
+    "build-ts:watch": "tsc --watch",
+    "prepublishOnly": "npm run build-ts",
+    "start": "cd example && ts-node ../node_modules/.bin/webpack-dev-server",
+    "test": "npm run build-ts && cd example && ts-node ../node_modules/.bin/webpack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elliottsj/cdn-upload-webpack-plugin.git"
+  },
+  "author": "Spencer Elliott <me@elliottsj.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/elliottsj/cdn-upload-webpack-plugin/issues"
+  },
+  "homepage": "https://github.com/elliottsj/cdn-upload-webpack-plugin#readme"
+}
