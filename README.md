@@ -1,6 +1,8 @@
 # cdn-upload-webpack-plugin
 A webpack plugin which incrementally uploads assets to a CDN upon build completion.
 
+[![npm](https://img.shields.io/npm/v/cdn-upload-webpack-plugin.svg?style=flat-square)](https://www.npmjs.com/package/cdn-upload-webpack-plugin)
+
 ### Features
 * Incremental upload: when using webpack in watch mode (or webpack-dev-server/webpack-dev-middleware), only newly-emitted assets are uploaded.
 * Prune extraneous assets: assets on the CDN which are no longer present in the webpack build are deleted.
