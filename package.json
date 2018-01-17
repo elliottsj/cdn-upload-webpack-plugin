@@ -1,6 +1,6 @@
 {
   "name": "cdn-upload-webpack-plugin",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A webpack plugin which incrementally uploads assets to a CDN upon build completion",
   "main": "./lib/index.js",
   "directories": {
