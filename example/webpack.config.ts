@@ -3,6 +3,7 @@ import webpack from 'webpack';
 
 module.exports = {
     entry: './index.js',
+    mode: 'development',
     output: {
         filename: 'bundle.js'
     },
@@ -14,7 +15,6 @@ module.exports = {
             },
             containerName: 'files',
             prefix: 'my/test/folder'
-        }),
-        CdnUploadPlugin.Progress()
+        })
     ]
 };

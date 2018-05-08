@@ -206,11 +206,18 @@ export default class AzurePlugin implements Plugin {
         this.upload = createAzureUpload(options);
     }
 
-    apply(compiler: Compiler) {
-        compiler.plugin('after-emit', (compilation, callback) => {
-            debugger;
+    public apply(compiler: Compiler) {
+        compiler.hooks.afterEmit.tapAsync({
+            name: 'CdnUploadPlugin',
+            context: true
+        } as any, (context, compilation, callback) => {
+            const reportProgress = context && (context as any).reportProgress;
             this.upload(compilation.assets).subscribe({
-                next(message: string) { compiler.applyPlugins('custom-progress', 0.98, message); },
+                next(message: string) {
+                    if (reportProgress) {
+                        reportProgress(0.98, message);
+                    }
+                },
                 complete() { callback(null); },
                 error(err: any) { callback(err); }
             });
