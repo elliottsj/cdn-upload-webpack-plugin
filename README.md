@@ -43,8 +43,7 @@ module.exports = {
             containerName: 'files',
             // The filename prefix to be used for all uploaded assets
             prefix: 'my/test/folder'
-        }),
-        CdnUploadPlugin.Progress()
+        })
     ]
 };
 ```
