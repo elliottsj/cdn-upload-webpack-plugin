@@ -8,7 +8,7 @@ node_modules/
 .envrc
 
 # Generated bundles
-/example/bundle.js
+/example/dist/
 
 # Compiled TypeScript
 /lib/

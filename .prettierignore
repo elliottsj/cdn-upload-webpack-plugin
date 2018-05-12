@@ -1,0 +1,5 @@
+# Generated bundles
+/example/dist/
+
+# Compiled TypeScript
+/lib/
