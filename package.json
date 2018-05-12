@@ -33,9 +33,11 @@
   "scripts": {
     "build-ts": "tsc",
     "build-ts:watch": "tsc --watch",
+    "format:check": "prettier --list-different '**/*.{js,ts}'",
+    "format:write": "prettier --write '**/*.{js,ts}'",
     "prepare": "npm run build-ts",
     "start": "cd example && ts-node ../node_modules/.bin/webpack-dev-server",
-    "test": "npm run build-ts && cd example && ts-node ../node_modules/.bin/webpack"
+    "test": "npm run format:check && npm run build-ts && cd example && ts-node ../node_modules/.bin/webpack"
   },
   "repository": {
     "type": "git",
