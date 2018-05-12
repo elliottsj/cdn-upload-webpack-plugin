@@ -1,11 +1,5 @@
 import { Observable, Observer } from '@reactivex/rxjs';
-import {
-  common,
-  createBlobService,
-  BlobService,
-  ErrorOrResult,
-  StorageHost,
-} from 'azure-storage';
+import * as AzureStorage from 'azure-storage';
 import bind from 'bind.ts';
 import { difference, pickBy } from 'lodash';
 import * as mime from 'mime';
@@ -24,7 +18,7 @@ export type AzureBlobServiceConnectionString = {
 export type AzureBlobServiceAccountAndKey = {
   storageAccount: string;
   storageAccessKey: string;
-  host?: string | StorageHost;
+  host?: string | AzureStorage.StorageHost;
 };
 
 export type AzureConnectionOptions =
@@ -91,15 +85,17 @@ function createAzureUpload(
   // Connect to Azure using one of the provided connection methods
   let blobService;
   if (options.connection && isConnectionString(options.connection)) {
-    blobService = createBlobService(options.connection.connectionString);
+    blobService = AzureStorage.createBlobService(
+      options.connection.connectionString,
+    );
   } else if (options.connection && isAccountAndKey(options.connection)) {
-    blobService = createBlobService(
+    blobService = AzureStorage.createBlobService(
       options.connection.storageAccount,
       options.connection.storageAccessKey,
       options.connection.host,
     );
   } else {
-    blobService = createBlobService();
+    blobService = AzureStorage.createBlobService();
   }
 
   /*
@@ -108,16 +104,20 @@ function createAzureUpload(
   const listBlobsSegmentedWithPrefix: (
     container: string,
     prefix: string,
-    currentToken: common.ContinuationToken,
-    options: BlobService.ListBlobsSegmentedRequestOptions,
-  ) => Observable<BlobService.ListBlobsResult> = Observable.bindNodeCallback(
+    currentToken: AzureStorage.common.ContinuationToken,
+    options: AzureStorage.BlobService.ListBlobsSegmentedRequestOptions,
+  ) => Observable<
+    AzureStorage.BlobService.ListBlobsResult
+  > = Observable.bindNodeCallback(
     bind(blobService.listBlobsSegmentedWithPrefix, blobService),
     (result, response) => result,
   );
   const createContainerIfNotExists: (
     container: string,
-    options: BlobService.CreateContainerOptions,
-  ) => Observable<BlobService.ContainerResult> = Observable.bindNodeCallback(
+    options: AzureStorage.BlobService.CreateContainerOptions,
+  ) => Observable<
+    AzureStorage.BlobService.ContainerResult
+  > = Observable.bindNodeCallback(
     bind(blobService.createContainerIfNotExists, blobService),
     (result, response) => result,
   );
@@ -125,8 +125,10 @@ function createAzureUpload(
     container: string,
     blob: string,
     text: string | Buffer,
-    options: BlobService.CreateBlobRequestOptions,
-  ) => Observable<BlobService.BlobResult> = Observable.bindNodeCallback(
+    options: AzureStorage.BlobService.CreateBlobRequestOptions,
+  ) => Observable<
+    AzureStorage.BlobService.BlobResult
+  > = Observable.bindNodeCallback(
     bind(blobService.createBlockBlobFromText, blobService),
     (result, response) => result,
   );
@@ -140,9 +142,9 @@ function createAzureUpload(
   function listAllBlobsSegmentedWithPrefix(
     container: string,
     prefix: string,
-    currentToken: common.ContinuationToken,
-    options: BlobService.ListBlobsSegmentedRequestOptions,
-  ): Observable<BlobService.BlobResult> {
+    currentToken: AzureStorage.common.ContinuationToken,
+    options: AzureStorage.BlobService.ListBlobsSegmentedRequestOptions,
+  ): Observable<AzureStorage.BlobService.BlobResult> {
     return listBlobsSegmentedWithPrefix(
       container,
       prefix,
@@ -158,7 +160,7 @@ function createAzureUpload(
               result.continuationToken,
               options,
             )
-          : Observable.empty<BlobService.BlobResult>(),
+          : Observable.empty<AzureStorage.BlobService.BlobResult>(),
       ),
     );
   }
