@@ -1,6 +1,8 @@
 # cdn-upload-webpack-plugin
+
 A webpack plugin which incrementally uploads assets to a CDN upon build completion.
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/elliottsj/cdn-upload-webpack-plugin.svg)](https://greenkeeper.io/)
 [![npm](https://img.shields.io/npm/v/cdn-upload-webpack-plugin.svg?style=flat-square)](https://www.npmjs.com/package/cdn-upload-webpack-plugin)
 
 ### Features
