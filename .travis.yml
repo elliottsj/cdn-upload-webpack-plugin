@@ -1,0 +1,28 @@
+# Use Trusty beta environment: https://docs.travis-ci.com/user/reference/trusty/
+dist: trusty
+sudo: false
+
+language: node_js
+node_js:
+  - '6'
+  - '8'
+  - 'stable'
+
+# Make Greenkeeper work with lockfiles:
+# https://github.com/greenkeeperio/greenkeeper-lockfile/tree/d675ee5ccd4b035bbe135e63b38e397af261373f#npm
+env:
+  global:
+    # GH_TOKEN
+    - secure: ANWgC6fyvr2s8dHAZgS0Dv14ISnR0wvzRIGa7XsKwFOoCmZPQBe9j8mzPxvH1l4v9dznDtRY5NsmLwRAriLIrV+7M30k00AsdEH6V5KvA0k+kiksep+k6WEOc74ZIIyLSTHXxDbt8ndQRWNZlcSwoGq3AUvrW1hFODF2afOspSNJmXBNjN82Rkev0qamjfefuSMj0VLc3lKXTwo5UHlXQsejOc0+ECssXsd/33aZCZ5F7y8zyBxudK9oLhPcP1RXlfEut7qFXbSc2NkEp8+OYBLggbZ46Qr22aHU/BNGbFMOiPYKJ5Psay6PriZ719EVqrzAih97PmK2ytgr9muv+QqYxkPl2pCR0nhfG6zTlDporyMJIzHPB91+YDhMBE41lCiL3BEbW6mvboAZIV3ZdVaC2o2qo0kJH9hg5mzDMIB3sEqp+uJyGve0rqZ02pu61v13zNLyWr/4XRLsI9wcrFKzjXkOjOGcQ4tgC0kyIMEcH1Gt6Z7xGlD0cjUdjmF6Wp4XfHKYP/xI2BDcHUP1TWChhh1m2pGHDUCHPWsVvjswxgvPVFabGwwFwjFcdM8MpVe7Zq3BhXVNc7OFF5ThuPEAME6OpkUjhuEBirruE6py5ECZVnhKY2h9e4OQPJQiof8EJl/mF0dGBceyTGx0ao+65lU6FT2iUhssIL0S75g=
+    # STORAGE_ACCOUNT
+    - secure: EL+MtH5TduMIcSdVR5DtFwS5hExgdXxIPrtoLopYhabI9zFwEXJog29fEar1wOvBXzlb0hlt5LcRxdIOlm1r4Z0C1f3cKpLIvnHxGjLE0y0YngwcZ9vfD+sTJGYd+x40gh5DzehxndepoPg/awGgTT2HH/8bLfXRoEztPBRd1Tka+jvX1yure3eVmYjE/IbY4NUvUT6e058QeCCym86VWjTeHgM2NcSmo/u4ZCe6zZQmWvQUkyLbL2l46yLHgFzoCZKREr6zusjqpq3PYI414s4tcL0fWPhhZ1cZ+YcM8flRYcHU7JAfOepw3gxlZH9wdc3QjydM9qwa2ww1reOBygXnWBJTZ5n7Frc4e2iiUiKDzSQCeFPORuB/XABKUbOjhr0CfpWolT4IHrQlVdRjytR8efwyqQdUrWFyATiOurgI6Z2dceU6fgGMUoetc7Jb+QoDwZkcDgK4KpMxphm+kqmO4BcWJry8iXHWDSGOM11rP3KpDf53jUVDkHtJxBsjvL9hyTqF6TKSSHtHEDF2iI3ppE5HEofgvy9dfNbfesEnge4gOmB5AsKULcIfCmL2OmzKXwynfWX9TT/inY/JlaxdbmK6RNhvs5kUxzLeFuh3tDmhDWyx+bOhO3yuojQ1ZTjO7T45FHllb3DCgsBWCVraUXSZiYBZ3U8xfiib9TE=
+    # STORAGE_ACCESS_KEY
+    - secure: UBed9G63xav1xvI9PomRfCAggB+1CtuDOLJ1EQHQDktE9dsvDBuWwK0b3RcO6+sSe+86AvS/TGrly4R5pbzExYJnuKWu7JbazE/O1+RAMDEieiUAA82G2if6fOZKhOAQfAyU86FPQfdOKxCJeAMqCxS38r0p9HniEC13agySJl2mO/rXWu30iKivaA+bIqVsFeYFdy1SCG25iEtRnQbX0TRhnI4hGQ+nS7OaUuxYFaUxDfS4gd/W+69F4m0gd6WNDiMohmjqFUhhXDv03mB2EvVa/SkO2vsC5y+ULz6/S+3cmLG7EiXPQOjYlfesbK6HBuKfU/EactUSs5oXCMPEf/kgiM96mmOX3BOhfH+uJXwKYADhh/ZWbDOAR01AQkftghqzpl5yWVpe0e6kaFSbzP4SBnkcf5nf+7biSvwbdqoqYDW5Btlc0lGngfto8Mh7vYsSmeiUZzosHdduxX/SqdOfr/ftHlfFy3nT0Bas8zjOeonTzvk22ovP8G/7n7OnGMOXErdT1Bfbgkdtv7hB4YKjTF8FlrGiMXT0NJaXmoi/YW8mQ3EEu2WBbKN+aeElJ2MOwm13d+MPBOGLDAFS4+Ou/hr8yD8MPWnTtRmbdzYZkgr70YChWiJRWol1D7+YNoFaGZ9bjNMWbCs3P1BXMOwTPDO8Zz1E9pq540HpEvw=
+    
+
+before_install:
+# package-lock.json was introduced in npm@5
+- '[[ $(node -v) =~ ^v9.*$ ]] || npm install -g npm@latest' # skipped when using node 9
+- npm install -g greenkeeper-lockfile@1
+before_script: greenkeeper-lockfile-update
+after_script: greenkeeper-lockfile-upload
