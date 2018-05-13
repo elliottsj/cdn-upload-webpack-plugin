@@ -16,7 +16,8 @@
     "@types/mime": "^2.0.0",
     "azure-storage": "^2.7.0",
     "bind.ts": "^1.1.4",
-    "mime": "^2.2.0"
+    "mime": "^2.2.0",
+    "webpack-log": "^1.2.0"
   },
   "devDependencies": {
     "@types/lodash-es": "^4.17.0",
