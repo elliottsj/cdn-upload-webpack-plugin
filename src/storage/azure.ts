@@ -1,11 +1,24 @@
-import { Observable, Observer } from '@reactivex/rxjs';
 import * as AzureStorage from 'azure-storage';
 import bind from 'bind.ts';
 import { difference, pickBy } from 'lodash';
 import * as mime from 'mime';
 import * as os from 'os';
 import * as path from 'path';
+import * as Rx from 'rxjs';
+import {
+  catchError,
+  count,
+  ignoreElements,
+  map,
+  mergeMap,
+  publish,
+  reduce,
+  retry,
+  tap,
+  toArray,
+} from 'rxjs/operators';
 import { Compiler, Plugin } from 'webpack';
+
 const weblog = require('webpack-log');
 
 /**
@@ -224,7 +237,7 @@ function withoutPrefix(name: string, prefix: string) {
  */
 function createAzureUpload(
   options: IAzureOptions,
-): (assets: { [assetName: string]: IAsset }) => Observable<Status> {
+): (assets: { [assetName: string]: IAsset }) => Rx.Observable<Status> {
   // Connect to Azure using one of the provided connection methods
   let blobService;
   if (options.connection && isConnectionString(options.connection)) {
@@ -247,27 +260,24 @@ function createAzureUpload(
     prefix: string,
     currentToken: AzureStorage.common.ContinuationToken,
     options: AzureStorage.BlobService.ListBlobsSegmentedRequestOptions,
-  ) => Observable<AzureStorage.BlobService.ListBlobsResult> = Observable.bindNodeCallback(
-    bind(blobService.listBlobsSegmentedWithPrefix, blobService),
-    (result, response) => result,
-  );
+  ) => Rx.Observable<
+    [AzureStorage.BlobService.ListBlobsResult, AzureStorage.ServiceResponse]
+  > = Rx.bindNodeCallback(bind(blobService.listBlobsSegmentedWithPrefix, blobService));
   const createContainerIfNotExists: (
     container: string,
     options: AzureStorage.BlobService.CreateContainerOptions,
-  ) => Observable<AzureStorage.BlobService.ContainerResult> = Observable.bindNodeCallback(
-    bind(blobService.createContainerIfNotExists, blobService),
-    (result, response) => result,
-  );
+  ) => Rx.Observable<
+    [AzureStorage.BlobService.ContainerResult, AzureStorage.ServiceResponse]
+  > = Rx.bindNodeCallback(bind(blobService.createContainerIfNotExists, blobService));
   const createBlockBlobFromText: (
     container: string,
     blob: string,
     text: string | Buffer,
     options: AzureStorage.BlobService.CreateBlobRequestOptions,
-  ) => Observable<AzureStorage.BlobService.BlobResult> = Observable.bindNodeCallback(
-    bind(blobService.createBlockBlobFromText, blobService),
-    (result, response) => result,
-  );
-  const deleteBlob = Observable.bindNodeCallback(bind(blobService.deleteBlob, blobService));
+  ) => Rx.Observable<
+    [AzureStorage.BlobService.BlobResult, AzureStorage.ServiceResponse]
+  > = Rx.bindNodeCallback(bind(blobService.createBlockBlobFromText, blobService));
+  const deleteBlob = Rx.bindNodeCallback(bind(blobService.deleteBlob, blobService));
   const getContainerUrl = bind(blobService.getUrl, blobService);
 
   /**
@@ -278,19 +288,21 @@ function createAzureUpload(
     prefix: string,
     currentToken: AzureStorage.common.ContinuationToken,
     options: AzureStorage.BlobService.ListBlobsSegmentedRequestOptions,
-  ): Observable<AzureStorage.BlobService.BlobResult> {
-    return listBlobsSegmentedWithPrefix(container, prefix, currentToken, options).mergeMap(result =>
-      Observable.concat(
-        result.entries,
-        result.continuationToken
-          ? listAllBlobsSegmentedWithPrefix(container, prefix, result.continuationToken, options)
-          : Observable.empty<AzureStorage.BlobService.BlobResult>(),
+  ): Rx.Observable<AzureStorage.BlobService.BlobResult> {
+    return listBlobsSegmentedWithPrefix(container, prefix, currentToken, options).pipe(
+      mergeMap(([result, _]) =>
+        Rx.concat(
+          result.entries,
+          result.continuationToken
+            ? listAllBlobsSegmentedWithPrefix(container, prefix, result.continuationToken, options)
+            : Rx.empty(),
+        ),
       ),
     );
   }
 
   return (assets: { [assetName: string]: IAsset }) =>
-    Observable.create((observer: Observer<Status>) => {
+    Rx.Observable.create((observer: Rx.Observer<Status>) => {
       const assetNames = Object.keys(assets);
       const emittedAssetNames = Object.keys(pickBy(assets, asset => asset.emitted));
       observer.next({
@@ -301,111 +313,128 @@ function createAzureUpload(
       createContainerIfNotExists(options.containerName, {
         publicAccessLevel: 'blob',
       })
-        .mergeMap(() => {
-          observer.next({
-            type: StatusType.ListingBlobs,
-            containerName: options.containerName,
-            prefix: options.prefix,
-          });
-          return listAllBlobsSegmentedWithPrefix(options.containerName, options.prefix, null, {})
-            .map(blob => blob.name)
-            .map(blobName => withoutPrefix(blobName, options.prefix));
-        })
-        .toArray()
-        .mergeMap(azureBlobNames => {
-          observer.next({
-            type: StatusType.ListingBlobsDone,
-            count: azureBlobNames.length,
-          });
-          // Upload newly-emitted assets, overwriting any existing Azure blobs with the same name
-          observer.next({
-            type: StatusType.CreatingBlobs,
-            count: emittedAssetNames.length,
-            containerName: options.containerName,
-            prefix: options.prefix,
-          });
-          return Observable.from(emittedAssetNames)
-            .mergeMap(
-              (assetName, index) => {
-                observer.next({
-                  type: StatusType.CreatingBlob,
-                  count: emittedAssetNames.length,
-                  index: index,
-                  containerName: options.containerName,
-                  prefix: options.prefix,
-                  name: assetName,
-                });
-                return createBlockBlobFromText(
-                  options.containerName,
-                  `${options.prefix}/${assetName}`,
-                  assets[assetName].source(),
-                  {
-                    contentSettings: {
-                      cacheControl: 'public, max-age=0',
-                      contentType: mime.getType(assetName),
-                    },
-                    parallelOperationThreadCount: 50,
-                  },
-                )
-                  .catch(error => {
-                    observer.next({
-                      type: StatusType.FailedCreatingBlob,
-                      containerName: options.containerName,
-                      prefix: options.prefix,
-                      name: assetName,
-                    });
-                    throw error;
-                  })
-                  .retry(5);
-              },
+        .pipe(
+          mergeMap(() => {
+            observer.next({
+              type: StatusType.ListingBlobs,
+              containerName: options.containerName,
+              prefix: options.prefix,
+            });
+            return listAllBlobsSegmentedWithPrefix(
+              options.containerName,
+              options.prefix,
               null,
-              50,
-            )
-            .count()
-            .do(uploadedCount => {
-              observer.next({
-                type: StatusType.UploadDone,
-                count: uploadedCount,
-              });
-            })
-            .mergeMap(() => {
-              // Prune extraneous Azure blobs
-              const extraneousBlobs = difference(azureBlobNames, assetNames);
-              return Observable.from(extraneousBlobs).mergeMap(
-                (blobName, index) => {
+              {},
+            ).pipe(
+              map(blob => blob.name),
+              map(blobName => withoutPrefix(blobName, options.prefix)),
+            );
+          }),
+          toArray(),
+          mergeMap(azureBlobNames => {
+            observer.next({
+              type: StatusType.ListingBlobsDone,
+              count: azureBlobNames.length,
+            });
+            // Upload newly-emitted assets, overwriting any existing Azure blobs with the same name
+            observer.next({
+              type: StatusType.CreatingBlobs,
+              count: emittedAssetNames.length,
+              containerName: options.containerName,
+              prefix: options.prefix,
+            });
+            return Rx.from(emittedAssetNames).pipe(
+              mergeMap(
+                (assetName, index) => {
                   observer.next({
-                    type: StatusType.PruningBlob,
-                    count: extraneousBlobs.length,
+                    type: StatusType.CreatingBlob,
+                    count: emittedAssetNames.length,
                     index: index,
                     containerName: options.containerName,
                     prefix: options.prefix,
-                    name: blobName,
+                    name: assetName,
                   });
-                  return deleteBlob(options.containerName, `${options.prefix}/${blobName}`, {})
-                    .catch(error => {
+                  return createBlockBlobFromText(
+                    options.containerName,
+                    `${options.prefix}/${assetName}`,
+                    assets[assetName].source(),
+                    {
+                      contentSettings: {
+                        cacheControl: 'public, max-age=0',
+                        contentType: mime.getType(assetName),
+                      },
+                      parallelOperationThreadCount: 50,
+                    },
+                  ).pipe(
+                    catchError(error => {
                       observer.next({
-                        type: StatusType.FailedPruningBlob,
+                        type: StatusType.FailedCreatingBlob,
+                        containerName: options.containerName,
+                        prefix: options.prefix,
+                        name: assetName,
+                      });
+                      throw error;
+                    }),
+                    retry(5),
+                  );
+                },
+                null,
+                50,
+              ),
+              count(),
+              tap(uploadedCount => {
+                observer.next({
+                  type: StatusType.UploadDone,
+                  count: uploadedCount,
+                });
+              }),
+              mergeMap(() => {
+                // Prune extraneous Azure blobs
+                const extraneousBlobs = difference(azureBlobNames, assetNames);
+                return Rx.from(extraneousBlobs).pipe(
+                  mergeMap(
+                    (blobName, index) => {
+                      observer.next({
+                        type: StatusType.PruningBlob,
+                        count: extraneousBlobs.length,
+                        index: index,
                         containerName: options.containerName,
                         prefix: options.prefix,
                         name: blobName,
                       });
-                      throw error;
-                    })
-                    .retry(5);
-                },
-                null,
-                100,
-              );
-            })
-            .count()
-            .do(prunedCount => {
-              observer.next({
-                type: StatusType.PruneDone,
-                count: prunedCount,
-              });
-            })
-            .ignoreElements();
-        })
+                      return deleteBlob(
+                        options.containerName,
+                        `${options.prefix}/${blobName}`,
+                        {},
+                      ).pipe(
+                        catchError(error => {
+                          observer.next({
+                            type: StatusType.FailedPruningBlob,
+                            containerName: options.containerName,
+                            prefix: options.prefix,
+                            name: blobName,
+                          });
+                          throw error;
+                        }),
+                        retry(5),
+                      );
+                    },
+                    null,
+                    100,
+                  ),
+                );
+              }),
+              count(),
+              tap(prunedCount => {
+                observer.next({
+                  type: StatusType.PruneDone,
+                  count: prunedCount,
+                });
+              }),
+              ignoreElements(),
+            );
+          }),
+        )
         .subscribe({
           next() {
             observer.next({
@@ -482,7 +511,7 @@ function collectReport(report: Report, status: Status): Report {
 }
 
 export default class AzurePlugin implements Plugin {
-  private upload: (assets: { [assetName: string]: IAsset }) => Observable<Status>;
+  private upload: (assets: { [assetName: string]: IAsset }) => Rx.Observable<Status>;
 
   constructor(options: IAzureOptions) {
     this.upload = createAzureUpload(options);
@@ -498,7 +527,7 @@ export default class AzurePlugin implements Plugin {
       } as any,
       (context, compilation, callback) => {
         const reportProgress = context && (context as any).reportProgress;
-        const upload$ = this.upload(compilation.assets).publish();
+        const upload$ = publish()(this.upload(compilation.assets));
 
         upload$.subscribe({
           next(status: Status) {
@@ -508,7 +537,7 @@ export default class AzurePlugin implements Plugin {
           },
         });
 
-        upload$.reduce(collectReport, {}).subscribe({
+        upload$.pipe(reduce(collectReport, {})).subscribe({
           next(report: Report) {
             log.info(`Completed upload to ${report.containerUrl}`);
             log.info(`${report.uploadedCount} assets uploaded`);

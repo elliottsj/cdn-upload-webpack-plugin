@@ -1,5 +1,6 @@
-import * as CdnUploadPlugin from '..';
-import webpack from 'webpack';
+'use strict';
+
+const CdnUploadPlugin = require('..');
 
 module.exports = {
   entry: './index.js',
