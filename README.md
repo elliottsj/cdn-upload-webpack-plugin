@@ -22,30 +22,34 @@ npm install cdn-upload-webpack-plugin --save-dev
 ```js
 const CdnDeployPlugin = require('cdn-upload-webpack-plugin');
 
+const azureUploadPlugin = new CdnUploadPlugin.Azure({
+    // Leave `connection` undefined to use environment variables
+    // AZURE_STORAGE_CONNECTION_STRING / AZURE_STORAGE_ACCOUNT / AZURE_STORAGE_ACCESS_KEY
+    // i.e. http://azure.github.io/azure-storage-node/global.html#createBlobService__anchor
+    // Or define as:
+    connection: {
+        connectionString: '<your connection string>'
+    },
+    // or
+    connection: {
+        storageAccount: '<your storage account>',
+        storageAccessKey: '<your access key>'
+    },
+    // The name of the container on Azure, which will be created if it doesn't exist
+    containerName: 'files',
+    // The filename prefix to be used for all uploaded assets
+    prefix: 'my/test/folder'
+});
+
 module.exports = {
     entry: './index.js',
     output: {
-        filename: 'bundle.js'
+        filename: 'bundle.js',
+        // Set your publicPath to have chunks loaded via the CDN:
+        publicPath: azureUploadPlugin.getPublicPath()
     },
     plugins: [
-        new CdnUploadPlugin.Azure({
-            // Leave `connection` undefined to use environment variables
-            // AZURE_STORAGE_CONNECTION_STRING / AZURE_STORAGE_ACCOUNT / AZURE_STORAGE_ACCESS_KEY
-            // i.e. http://azure.github.io/azure-storage-node/global.html#createBlobService__anchor
-            // Or define as:
-            connection: {
-                connectionString: '<your connection string>'
-            },
-            // or
-            connection: {
-                storageAccount: '<your storage account>',
-                storageAccessKey: '<your access key>'
-            },
-            // The name of the container on Azure, which will be created if it doesn't exist
-            containerName: 'files',
-            // The filename prefix to be used for all uploaded assets
-            prefix: 'my/test/folder'
-        })
+        azureUploadPlugin
     ]
 };
 ```
