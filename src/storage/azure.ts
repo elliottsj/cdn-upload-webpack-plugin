@@ -57,6 +57,21 @@ function isAccountAndKey(
   return (<AzureBlobServiceAccountAndKey>options).storageAccount !== undefined;
 }
 
+function connectBlobService(options: IAzureOptions) {
+  // Connect to Azure using one of the provided connection methods
+  if (options.connection && isConnectionString(options.connection)) {
+    return AzureStorage.createBlobService(options.connection.connectionString);
+  }
+  if (options.connection && isAccountAndKey(options.connection)) {
+    return AzureStorage.createBlobService(
+      options.connection.storageAccount,
+      options.connection.storageAccessKey,
+      options.connection.host,
+    );
+  }
+  return AzureStorage.createBlobService();
+}
+
 interface IAsset {
   emitted: boolean;
   source(): string | Buffer;
@@ -236,22 +251,9 @@ function withoutPrefix(name: string, prefix: string) {
  *               `─────────'      `─────────'
  */
 function createAzureUpload(
+  blobService: AzureStorage.BlobService,
   options: IAzureOptions,
 ): (assets: { [assetName: string]: IAsset }) => Rx.Observable<Status> {
-  // Connect to Azure using one of the provided connection methods
-  let blobService;
-  if (options.connection && isConnectionString(options.connection)) {
-    blobService = AzureStorage.createBlobService(options.connection.connectionString);
-  } else if (options.connection && isAccountAndKey(options.connection)) {
-    blobService = AzureStorage.createBlobService(
-      options.connection.storageAccount,
-      options.connection.storageAccessKey,
-      options.connection.host,
-    );
-  } else {
-    blobService = AzureStorage.createBlobService();
-  }
-
   /*
    * Created transformed BlobService methods which return an Observable instead of taking a callback.
    */
@@ -511,10 +513,14 @@ function collectReport(report: Report, status: Status): Report {
 }
 
 export default class AzurePlugin implements Plugin {
+  private options: IAzureOptions;
+  private blobService: AzureStorage.BlobService;
   private upload: (assets: { [assetName: string]: IAsset }) => Rx.Observable<Status>;
 
   constructor(options: IAzureOptions) {
-    this.upload = createAzureUpload(options);
+    this.options = options;
+    this.blobService = connectBlobService(options);
+    this.upload = createAzureUpload(this.blobService, options);
   }
 
   public apply(compiler: Compiler) {
@@ -560,5 +566,9 @@ export default class AzurePlugin implements Plugin {
         upload$.connect();
       },
     );
+  }
+
+  public getPublicPath() {
+    return this.blobService.getUrl(this.options.containerName, this.options.prefix);
   }
 }
