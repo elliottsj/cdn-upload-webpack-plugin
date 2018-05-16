@@ -569,6 +569,6 @@ export default class AzurePlugin implements Plugin {
   }
 
   public getPublicPath() {
-    return this.blobService.getUrl(this.options.containerName, this.options.prefix);
+    return `${this.blobService.getUrl(this.options.containerName, this.options.prefix)}/`;
   }
 }
