@@ -22,12 +22,7 @@ module.exports = {
     filename: 'bundle.js',
     publicPath: azureUploadPlugin.getPublicPath(),
   },
-  plugins: [
-    azureUploadPlugin,
-    new HtmlWebpackPlugin({
-      template: 'index.html',
-    }),
-  ],
+  plugins: [azureUploadPlugin, new HtmlWebpackPlugin()],
   devServer: {
     contentBase: path.resolve(__dirname, 'dist'),
   },
