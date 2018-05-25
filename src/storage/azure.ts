@@ -526,7 +526,7 @@ export default class AzurePlugin implements Plugin {
   public apply(compiler: Compiler) {
     const log = weblog({ name: 'CdnUploadPlugin' });
 
-    compiler.hooks.emit.tapAsync(
+    compiler.hooks.afterEmit.tapAsync(
       {
         name: 'CdnUploadPlugin',
         context: true,
