@@ -13,7 +13,6 @@ const azureUploadPlugin = new CdnUploadPlugin.Azure({
   prefix: 'my/test/folder',
 });
 
-debugger;
 module.exports = {
   entry: './index.js',
   mode: 'development',
